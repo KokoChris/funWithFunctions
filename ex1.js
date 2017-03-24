@@ -67,7 +67,7 @@ function limit(binary, count) {
         return undefined;
     }
 }
-function from(x) {
+function from(start) {
     return function () {
         var next = start;
         start += 1;
@@ -83,10 +83,123 @@ function to(gen, end) {
         return undefined;
     }
 }
+
+function fromTo(start, end) {
+    var counter = 0;
+    return function () {
+        if (counter < end) {
+            var value = counter;
+            counter += 1;
+            return value;
+        }
+        return undefined;
+
+    }
+}
+//better fromTo (cleaner ---> reusing functions)
+function betterFromTo(start, end) {
+    return to(from(start), end);
+}
+
+function element(letters, gen) {
+    //account for missing gen function
+    if (gen === undefined) {
+        gen = fromTo(
+            0,
+            array.length
+        );
+    }
+    return function () {
+        var currentIteration = gen();
+        if (currentIteration !== undefined) {
+            return letters[currentIteration]
+        }
+        return undefined;
+    }
+}
+
+function collect(gen, array) {
+    return function () {
+        var value = gen();
+        if (value !== undefined) {
+            array.push(value);
+        }
+        return value;
+    }
+}
+function filter(gen, predicate) {
+    return function () {
+        var value = gen();
+        if (predicate(value)) {
+            return value;
+        }
+        return undefined;
+    }
+}
+function concat(gen1, gen2) {
+    var gen = gen1;
+    return function () {
+        var value = gen();
+        if (value !== undefined) {
+            return value;
+        }
+        gen = gen2();
+        return gen();
+    };
+}
+function gensymf(genChar) {
+    var val = 0;
+    return function () {
+        val += 1;
+        return genChar.toString() + val.toString();
+    }
+}
+
+function counter(counterValue) {
+
+    return {
+        up() {
+            counterValue += 1;
+            return counterValue;
+        },
+        down() {
+            counterValue -= 1;
+            return counterValue;
+        }
+    }
+}
+
+var object = counter(10);
+console.log(object.up());
+console.log(object.down());
+
+//Not correct!!!!!!!!
+// function fibonaccif(first, second) {
+//     var helperIndex = fromTo(0, 2);
+//     var args = arguments;
+//     return function actual() {
+//         var index = helperIndex();
+//         if (index !== undefined) {
+//             return args[index] + (args[index-1] ? args[index-1] : 0);
+//         }
+//         first = second;
+//         second = first + second;
+
+//         helperIndex = fromTo(0, 2);
+//         return actual();
+//     }
+// }
 var doubl = twice(add);
 var square = twice(mul);
 var index = from(0);
-
+var index2 = fromTo(0, 3);
+var index3 = betterFromTo(0, 3);
+var ele = element(['a', 'b', 'c', 'd'], fromTo(1, 3));
+var fil = filter(fromTo(0, 5), function third(value) {
+    return (value % 3 === 0);
+});
+var geng = gensymf('G');
+// var fib = fibonaccif(0, 1);
 //inc = addf(1);
 //inc = liftf(add)(1);
 //inc = curry(add,1);
@@ -100,3 +213,22 @@ assert.equal(composeu(doubl, square)(5), 100);
 assert.equal(composeb(add, mul)(2, 3, 7), 35)
 assert.equal(index(), 0);
 assert.equal(index(), 1);
+assert.equal(index2(), 0);
+assert.equal(index2(), 1);
+assert.equal(index2(), 2);
+assert.equal(index2(), undefined);
+assert.equal(index3(), 0);
+assert.equal(index3(), 1);
+assert.equal(index3(), 2);
+assert.equal(index3(), undefined);
+assert.equal(ele(), 'a');
+assert.equal(fil(), 0);
+assert.equal(fil(), undefined);
+assert.equal(fil(), undefined);
+assert.equal(fil(), 3);
+assert.equal(geng(), "G1");
+assert.equal(geng(), "G2");
+
+
+
+console.log("All Passed!!!")
